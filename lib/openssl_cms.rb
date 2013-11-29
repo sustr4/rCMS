@@ -14,12 +14,16 @@
   $Id$
 =end
 
-require 'openssl-cms.so'
+if defined?(:OpenSSL)
+  Object.send(:remove_const, :OpenSSL)
+end
 
-require 'openssl-cms/bn'
-require 'openssl-cms/cipher'
-require 'openssl-cms/config'
-require 'openssl-cms/digest'
-require 'openssl-cms/ssl-internal'
-require 'openssl-cms/x509-internal'
+require 'openssl_cms.so'
+
+require 'openssl_cms/bn'
+require 'openssl_cms/cipher'
+require 'openssl_cms/config'
+require 'openssl_cms/digest'
+require 'openssl_cms/ssl-internal'
+require 'openssl_cms/x509-internal'
 

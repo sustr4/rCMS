@@ -14,7 +14,7 @@
   $Id$
 =end
 
-require "openssl-cms/buffering"
+require "openssl_cms/buffering"
 require "fcntl"
 
 module OpenSSL

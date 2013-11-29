@@ -789,7 +789,7 @@ ossl_debug_set(VALUE self, VALUE val)
  *
  */
 void
-Init_openssl()
+Init_openssl_cms()
 {
     /*
      * Init timezone info

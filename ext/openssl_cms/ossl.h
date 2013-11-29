@@ -233,7 +233,7 @@ void ossl_debug(const char *, ...);
 #include "ossl_engine.h"
 #include "ossl_cms.h"
 
-void Init_openssl(void);
+void Init_openssl_cms(void);
 
 #if defined(__cplusplus)
 }

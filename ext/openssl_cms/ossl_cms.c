@@ -188,13 +188,13 @@ ossl_cms_to_der(VALUE self)
     unsigned char *p;
 
     GetCMS(self, cms);
-    if((len = i2d_CMS(cms, NULL)) <= 0)
+    if((len = i2d_CMS_ContentInfo(cms, NULL)) <= 0)
         ossl_raise(eCMSError, NULL);
 
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
 
-    if(i2d_CMS(cms, &p) <= 0)
+    if(i2d_CMS_ContentInfo(cms, &p) <= 0)
         ossl_raise(eCMSError, NULL);
 
     ossl_str_adjust(str, p);
