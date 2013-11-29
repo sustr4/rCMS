@@ -30,29 +30,29 @@ VALUE eCMSError;
 static VALUE
 ossl_cms_s_read_cms(VALUE klass, VALUE arg)
 {
-    BIO *in, *bio_out;
+    BIO *in;
     CMS_ContentInfo *cms, *out;
-    VALUE ret, data;
+    VALUE ret;
 
     arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(arg);
-    out = NULL;
+    out = CMS_ContentInfo_new();
     cms = PEM_read_bio_CMS(in, &out, NULL, NULL);
 
-    BIO_free(in);
+    if (!cms) {
+        OSSL_BIO_reset(in);
+        cms = d2i_CMS_bio(in, &out);
 
-    if(!cms) ossl_raise(eCMSError, NULL);
-
-    if (out) {
-        bio_out = BIO_new(BIO_s_mem());
-        BIO_new_CMS(bio_out, out);
-        data = ossl_membio2str(bio_out);
-    } else {
-        data = Qnil;
+        if (!cms) {
+            BIO_free(in);
+            CMS_ContentInfo_free(out);
+            ossl_raise(rb_eArgError, "Could not parse the CMS");
+        }
     }
 
     WrapCMS(cCMS, ret, cms);
-    ossl_cms_set_data(ret, data);
+    BIO_free(in);
+    ossl_cms_set_data(ret, Qnil);
     ossl_cms_set_err_string(ret, Qnil);
 
     return ret;
