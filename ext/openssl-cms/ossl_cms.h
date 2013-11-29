@@ -20,7 +20,7 @@ extern "C" {
 extern VALUE cCMS;
 extern VALUE eCMSError;
 
-void Init_rcms(void);
+void Init_ossl_cms(void);
 
 #if defined(__cplusplus)
 }

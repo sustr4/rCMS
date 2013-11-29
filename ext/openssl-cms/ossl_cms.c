@@ -216,7 +216,7 @@ ossl_cms_to_pem(VALUE self)
 }
 
 void
-Init_rcms()
+Init_ossl_cms()
 {
     cCMS = rb_define_class_under(mOSSL, "CMS", rb_cObject);
     eCMSError = rb_define_class_under(cCMS, "CMSError", rb_eStandardError);
