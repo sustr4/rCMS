@@ -139,5 +139,5 @@ have_struct_member("X509_ATTRIBUTE", "single", "openssl/x509.h")
 message "=== Checking done. ===\n"
 
 create_header
-create_makefile("openssl")
+create_makefile("openssl-cms")
 message "Done.\n"

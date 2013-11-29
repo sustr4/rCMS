@@ -7,7 +7,7 @@
     (obj) = Data_Wrap_Struct((klass), 0, CMS_ContentInfo_free, (cms)); \
 } while (0)
 #define GetCMS(obj, cms) do { \
-    Data_Get_Struct((obj), CMS, (cms)); \
+    Data_Get_Struct((obj), CMS_ContentInfo, (cms)); \
     if (!(cms)) { \
     ossl_raise(rb_eRuntimeError, "CMS wasn't initialized."); \
     } \
@@ -30,19 +30,25 @@ VALUE eCMSError;
 static VALUE
 ossl_cms_s_read_cms(VALUE klass, VALUE arg)
 {
-    BIO *in, *out;
-    CMS_ContentInfo *cms;
+    BIO *in, *bio_out;
+    CMS_ContentInfo *cms, *out;
     VALUE ret, data;
 
     in = ossl_obj2bio(arg);
     out = NULL;
-    cms = PEM_read_bio_CMS(in, &out, NULL, NULL)
+    cms = PEM_read_bio_CMS(in, &out, NULL, NULL);
 
     BIO_free(in);
 
     if(!cms) ossl_raise(eCMSError, NULL);
 
-    data = out ? ossl_membio2str(out) : Qnil;
+    if (out) {
+        bio_out = NULL;
+        BIO_new_CMS(bio_out, out);
+        data = ossl_membio2str(bio_out);
+    } else {
+        data = Qnil;
+    }
 
     WrapCMS(cCMS, ret, cms);
     ossl_cms_set_data(ret, data);
@@ -54,7 +60,7 @@ ossl_cms_s_read_cms(VALUE klass, VALUE arg)
 static VALUE
 ossl_cms_alloc(VALUE klass)
 {
-    CMS *cms;
+    CMS_ContentInfo *cms;
     VALUE obj;
 
     if (!(cms = CMS_ContentInfo_new())) {
@@ -166,6 +172,7 @@ ossl_cms_verify(int argc, VALUE *argv, VALUE self)
     ERR_clear_error();
 
     data = ossl_membio2str(out);
+
     ossl_cms_set_data(self, data);
     sk_X509_pop_free(x509s, X509_free);
 
@@ -199,8 +206,8 @@ static VALUE
 ossl_cms_to_pem(VALUE self)
 {
     CMS_ContentInfo *cms;
-    BIO *out;
     VALUE str;
+    BIO *out;
 
     GetCMS(self, cms);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -210,6 +217,7 @@ ossl_cms_to_pem(VALUE self)
         BIO_free(out);
         ossl_raise(eCMSError, NULL);
     }
+
     str = ossl_membio2str(out);
 
     return str;
