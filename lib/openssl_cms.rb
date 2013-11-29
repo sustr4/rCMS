@@ -14,7 +14,7 @@
   $Id$
 =end
 
-if defined?(:OpenSSL)
+if Object.const_defined? :OpenSSL
   Object.send(:remove_const, :OpenSSL)
 end
 
