@@ -4,7 +4,7 @@
     if (!(cms)) { \
     ossl_raise(rb_eRuntimeError, "CMS wasn't initialized."); \
     } \
-    (obj) = Data_Wrap_Struct((klass), 0, CMS_free, (cms)); \
+    (obj) = Data_Wrap_Struct((klass), 0, CMS_ContentInfo_free, (cms)); \
 } while (0)
 #define GetCMS(obj, cms) do { \
     Data_Get_Struct((obj), CMS, (cms)); \
@@ -31,7 +31,7 @@ static VALUE
 ossl_cms_s_read_cms(VALUE klass, VALUE arg)
 {
     BIO *in, *out;
-    CMS *cms;
+    CMS_ContentInfo *cms;
     VALUE ret, data;
 
     in = ossl_obj2bio(arg);
@@ -57,7 +57,7 @@ ossl_cms_alloc(VALUE klass)
     CMS *cms;
     VALUE obj;
 
-    if (!(cms = CMS_new())) {
+    if (!(cms = CMS_ContentInfo_new())) {
         ossl_raise(eCMSError, NULL);
     }
     WrapCMS(klass, obj, cms);
@@ -68,7 +68,7 @@ ossl_cms_alloc(VALUE klass)
 static VALUE
 ossl_cms_initialize(int argc, VALUE *argv, VALUE self)
 {
-    CMS *c, *cms = DATA_PTR(self);
+    CMS_ContentInfo *c, *cms = DATA_PTR(self);
     BIO *in;
     VALUE arg;
 
@@ -85,7 +85,7 @@ ossl_cms_initialize(int argc, VALUE *argv, VALUE self)
 
         if (!c) {
             BIO_free(in);
-            CMS_free(cms);
+            CMS_ContentInfo_free(cms);
             DATA_PTR(self) = NULL;
             ossl_raise(rb_eArgError, "Could not parse the CMS");
         }
@@ -102,7 +102,7 @@ ossl_cms_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_cms_copy(VALUE self, VALUE other)
 {
-    CMS *a, *b, *cms;
+    CMS_ContentInfo *a, *b, *cms;
 
     rb_check_frozen(self);
     if (self == other) return self;
@@ -110,12 +110,12 @@ ossl_cms_copy(VALUE self, VALUE other)
     GetCMS(self, a);
     SafeGetCMS(other, b);
 
-    cms = CMS_dup(b);
+    cms = CMS_ContentInfo_dup(b);
     if (!cms) {
         ossl_raise(eCMSError, NULL);
     }
     DATA_PTR(self) = cms;
-    CMS_free(a);
+    CMS_ContentInfo_free(a);
 
     return self;
 }
@@ -128,7 +128,7 @@ ossl_cms_verify(int argc, VALUE *argv, VALUE self)
     X509_STORE *x509st;
     int flg, ok, status = 0;
     BIO *in, *out;
-    CMS *cms;
+    CMS_ContentInfo *cms;
     VALUE data;
     const char *msg;
 
@@ -175,7 +175,7 @@ ossl_cms_verify(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_cms_to_der(VALUE self)
 {
-    CMS *cms;
+    CMS_ContentInfo *cms;
     VALUE str;
     long len;
     unsigned char *p;
@@ -198,7 +198,7 @@ ossl_cms_to_der(VALUE self)
 static VALUE
 ossl_cms_to_pem(VALUE self)
 {
-    CMS *cms;
+    CMS_ContentInfo *cms;
     BIO *out;
     VALUE str;
 
