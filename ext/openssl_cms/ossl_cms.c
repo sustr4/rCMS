@@ -34,6 +34,7 @@ ossl_cms_s_read_cms(VALUE klass, VALUE arg)
     CMS_ContentInfo *cms, *out;
     VALUE ret, data;
 
+    arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(arg);
     out = NULL;
     cms = PEM_read_bio_CMS(in, &out, NULL, NULL);
@@ -43,7 +44,7 @@ ossl_cms_s_read_cms(VALUE klass, VALUE arg)
     if(!cms) ossl_raise(eCMSError, NULL);
 
     if (out) {
-        bio_out = NULL;
+        bio_out = BIO_new(BIO_s_mem());
         BIO_new_CMS(bio_out, out);
         data = ossl_membio2str(bio_out);
     } else {
@@ -74,30 +75,30 @@ ossl_cms_alloc(VALUE klass)
 static VALUE
 ossl_cms_initialize(int argc, VALUE *argv, VALUE self)
 {
-    CMS_ContentInfo *c, *cms = DATA_PTR(self);
+    CMS_ContentInfo *cms, *out = DATA_PTR(self);
     BIO *in;
     VALUE arg;
 
     if(rb_scan_args(argc, argv, "01", &arg) == 0)
-    return self;
+        return self;
 
     arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(arg);
 
-    c = PEM_read_bio_CMS(in, &cms, NULL, NULL);
-    if (!c) {
+    cms = PEM_read_bio_CMS(in, &out, NULL, NULL);
+    if (!cms) {
         OSSL_BIO_reset(in);
-        c = d2i_CMS_bio(in, &cms);
+        cms = d2i_CMS_bio(in, &out);
 
-        if (!c) {
+        if (!cms) {
             BIO_free(in);
-            CMS_ContentInfo_free(cms);
+            CMS_ContentInfo_free(out);
             DATA_PTR(self) = NULL;
             ossl_raise(rb_eArgError, "Could not parse the CMS");
         }
     }
 
-    DATA_PTR(self) = cms;
+    DATA_PTR(self) = out;
     BIO_free(in);
     ossl_cms_set_data(self, Qnil);
     ossl_cms_set_err_string(self, Qnil);
