@@ -1,2 +1,2 @@
-rCMS
-====
+OpenSSL-CMS for Ruby
+====================
