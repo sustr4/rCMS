@@ -64,29 +64,47 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 #if HAVE_ENGINE_LOAD_DYNAMIC
     OSSL_ENGINE_LOAD_IF_MATCH(dynamic);
 #endif
-#if HAVE_ENGINE_LOAD_CSWIFT
-    OSSL_ENGINE_LOAD_IF_MATCH(cswift);
-#endif
-#if HAVE_ENGINE_LOAD_CHIL
-    OSSL_ENGINE_LOAD_IF_MATCH(chil);
-#endif
-#if HAVE_ENGINE_LOAD_ATALLA
-    OSSL_ENGINE_LOAD_IF_MATCH(atalla);
-#endif
-#if HAVE_ENGINE_LOAD_NURON
-    OSSL_ENGINE_LOAD_IF_MATCH(nuron);
-#endif
-#if HAVE_ENGINE_LOAD_UBSEC
-    OSSL_ENGINE_LOAD_IF_MATCH(ubsec);
+#if HAVE_ENGINE_LOAD_4758CCA
+    OSSL_ENGINE_LOAD_IF_MATCH(4758cca);
 #endif
 #if HAVE_ENGINE_LOAD_AEP
     OSSL_ENGINE_LOAD_IF_MATCH(aep);
 #endif
+#if HAVE_ENGINE_LOAD_ATALLA
+    OSSL_ENGINE_LOAD_IF_MATCH(atalla);
+#endif
+#if HAVE_ENGINE_LOAD_CHIL
+    OSSL_ENGINE_LOAD_IF_MATCH(chil);
+#endif
+#if HAVE_ENGINE_LOAD_CSWIFT
+    OSSL_ENGINE_LOAD_IF_MATCH(cswift);
+#endif
+#if HAVE_ENGINE_LOAD_NURON
+    OSSL_ENGINE_LOAD_IF_MATCH(nuron);
+#endif
 #if HAVE_ENGINE_LOAD_SUREWARE
     OSSL_ENGINE_LOAD_IF_MATCH(sureware);
 #endif
-#if HAVE_ENGINE_LOAD_4758CCA
-    OSSL_ENGINE_LOAD_IF_MATCH(4758cca);
+#if HAVE_ENGINE_LOAD_UBSEC
+    OSSL_ENGINE_LOAD_IF_MATCH(ubsec);
+#endif
+#if HAVE_ENGINE_LOAD_PADLOCK
+    OSSL_ENGINE_LOAD_IF_MATCH(padlock);
+#endif
+#if HAVE_ENGINE_LOAD_CAPI
+    OSSL_ENGINE_LOAD_IF_MATCH(capi);
+#endif
+#if HAVE_ENGINE_LOAD_GMP
+    OSSL_ENGINE_LOAD_IF_MATCH(gmp);
+#endif
+#if HAVE_ENGINE_LOAD_GOST
+    OSSL_ENGINE_LOAD_IF_MATCH(gost);
+#endif
+#if HAVE_ENGINE_LOAD_CRYPTODEV
+    OSSL_ENGINE_LOAD_IF_MATCH(cryptodev);
+#endif
+#if HAVE_ENGINE_LOAD_AESNI
+    OSSL_ENGINE_LOAD_IF_MATCH(aesni);
 #endif
 #endif
 #ifdef HAVE_ENGINE_LOAD_OPENBSD_DEV_CRYPTO
@@ -347,18 +365,11 @@ ossl_engine_get_cmds(VALUE self)
 static VALUE
 ossl_engine_inspect(VALUE self)
 {
-    VALUE str;
-    const char *cname = rb_class2name(rb_obj_class(self));
+    ENGINE *e;
 
-    str = rb_str_new2("#<");
-    rb_str_cat2(str, cname);
-    rb_str_cat2(str, " id=\"");
-    rb_str_append(str, ossl_engine_get_id(self));
-    rb_str_cat2(str, "\" name=\"");
-    rb_str_append(str, ossl_engine_get_name(self));
-    rb_str_cat2(str, "\">");
-
-    return str;
+    GetEngine(self, e);
+    return rb_sprintf("#<%"PRIsVALUE" id=\"%s\" name=\"%s\">",
+		      rb_obj_class(self), ENGINE_get_id(e), ENGINE_get_name(e));
 }
 
 #define DefEngineConst(x) rb_define_const(cEngine, #x, INT2NUM(ENGINE_##x))
