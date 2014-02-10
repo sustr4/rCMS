@@ -11,6 +11,6 @@ Gem::Specification.new do |gem|
   
   gem.extensions << "ext/openssl_cms/extconf.rb"
   
-  gem.required_ruby_version = '= 1.9.3'
+  gem.required_ruby_version = '~> 1.9.3'
 end
 
