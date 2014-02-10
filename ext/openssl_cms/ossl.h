@@ -67,7 +67,7 @@ extern "C" {
 #include <openssl/cms.h>
 #undef X509_NAME
 #undef PKCS7_SIGNER_INFO
-#if defined(HAVE_OPENSSL_ENGINE_H) && defined(HAVE_ST_ENGINE)
+#if defined(HAVE_OPENSSL_ENGINE_H) && defined(HAVE_EVP_CIPHER_CTX_ENGINE)
 #  define OSSL_ENGINE_ENABLED
 #  include <openssl/engine.h>
 #endif
