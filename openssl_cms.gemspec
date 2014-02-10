@@ -1,6 +1,6 @@
 Gem::Specification.new do |gem|
   gem.name = "openssl_cms"
-  gem.version = "0.0.1"
+  gem.version = "0.0.2"
   gem.summary = "OpenSSL with CMS functions for Ruby"
   gem.author = "Zdenek Sustr, Boris Parak"
   gem.homepage = 'https://github.com/arax/openssl-cms'
@@ -11,6 +11,6 @@ Gem::Specification.new do |gem|
   
   gem.extensions << "ext/openssl_cms/extconf.rb"
   
-  gem.required_ruby_version = '>= 1.9.3'
+  gem.required_ruby_version = '~> 2.0.0'
 end
 
