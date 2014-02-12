@@ -157,8 +157,8 @@ ASN1_INTEGER *
 num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
 {
     BIGNUM *bn;
-   
-    if (NIL_P(obj)) 
+
+    if (NIL_P(obj))
 	ossl_raise(rb_eTypeError, "Can't convert nil into Integer");
 
     bn = GetBNPtr(obj);
@@ -346,7 +346,7 @@ obj_to_asn1derstr(VALUE obj)
  * DER to Ruby converters
  */
 static VALUE
-decode_bool(unsigned char* der, int length)
+decode_bool(unsigned char* der, long length)
 {
     int val;
     const unsigned char *p;
@@ -359,7 +359,7 @@ decode_bool(unsigned char* der, int length)
 }
 
 static VALUE
-decode_int(unsigned char* der, int length)
+decode_int(unsigned char* der, long length)
 {
     ASN1_INTEGER *ai;
     const unsigned char *p;
@@ -378,7 +378,7 @@ decode_int(unsigned char* der, int length)
 }
 
 static VALUE
-decode_bstr(unsigned char* der, int length, long *unused_bits)
+decode_bstr(unsigned char* der, long length, long *unused_bits)
 {
     ASN1_BIT_STRING *bstr;
     const unsigned char *p;
@@ -399,7 +399,7 @@ decode_bstr(unsigned char* der, int length, long *unused_bits)
 }
 
 static VALUE
-decode_enum(unsigned char* der, int length)
+decode_enum(unsigned char* der, long length)
 {
     ASN1_ENUMERATED *ai;
     const unsigned char *p;
@@ -418,7 +418,7 @@ decode_enum(unsigned char* der, int length)
 }
 
 static VALUE
-decode_null(unsigned char* der, int length)
+decode_null(unsigned char* der, long length)
 {
     ASN1_NULL *null;
     const unsigned char *p;
@@ -432,7 +432,7 @@ decode_null(unsigned char* der, int length)
 }
 
 static VALUE
-decode_obj(unsigned char* der, int length)
+decode_obj(unsigned char* der, long length)
 {
     ASN1_OBJECT *obj;
     const unsigned char *p;
@@ -461,7 +461,7 @@ decode_obj(unsigned char* der, int length)
 }
 
 static VALUE
-decode_time(unsigned char* der, int length)
+decode_time(unsigned char* der, long length)
 {
     ASN1_TIME *time;
     const unsigned char *p;
@@ -480,7 +480,7 @@ decode_time(unsigned char* der, int length)
 }
 
 static VALUE
-decode_eoc(unsigned char *der, int length)
+decode_eoc(unsigned char *der, long length)
 {
     if (length != 2 || !(der[0] == 0x00 && der[1] == 0x00))
 	ossl_raise(eASN1Error, NULL);
@@ -624,8 +624,8 @@ ossl_asn1_default_tag(VALUE obj)
       	}
     	tmp_class = rb_class_superclass(tmp_class);
     }
-    ossl_raise(eASN1Error, "universal tag for %s not found",
-	       rb_class2name(CLASS_OF(obj)));
+    ossl_raise(eASN1Error, "universal tag for %"PRIsVALUE" not found",
+	       rb_obj_class(obj));
 
     return -1; /* dummy */
 }
@@ -733,7 +733,7 @@ ossl_asn1data_initialize(VALUE self, VALUE value, VALUE tag, VALUE tag_class)
 }
 
 static VALUE
-join_der_i(VALUE i, VALUE str)
+join_der_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, str))
 {
     i = ossl_to_der_if_possible(i);
     StringValue(i);
@@ -792,7 +792,7 @@ ossl_asn1data_to_der(VALUE self)
 }
 
 static VALUE
-int_ossl_asn1_decode0_prim(unsigned char **pp, long length, int hlen, int tag,
+int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
 			   VALUE tc, long *num_read)
 {
     VALUE value, asn1data;
@@ -937,8 +937,8 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
 {
     unsigned char *start, *p;
     const unsigned char *p0;
-    long len = 0, inner_read = 0, off = *offset;
-    int hlen, tag, tc, j;
+    long len = 0, inner_read = 0, off = *offset, hlen;
+    int tag, tc, j;
     VALUE asn1data, tag_class;
 
     p = *pp;
@@ -1358,6 +1358,17 @@ ossl_asn1cons_each(VALUE self)
     return self;
 }
 
+/*
+ * call-seq:
+ *    ObjectId.register(object_id, short_name, long_name)
+ *
+ * This adds a new ObjectId to the internal tables. Where +object_id+ is the
+ * numerical form, +short_name+ is the short name, and +long_name+ is the long
+ * name.
+ *
+ * Returns +true+ if successful. Raises an ASN1Error otherwise.
+ *
+ */
 static VALUE
 ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
 {
@@ -1371,6 +1382,14 @@ ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
     return Qtrue;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId#sn
+ *
+ * The short name of the ObjectId, as defined in +openssl/objects.h+.
+ */
+/* Document-method: OpenSSL::ASN1::ObjectId#short_name
+ *
+ * #short_name is an alias to #sn
+ */
 static VALUE
 ossl_asn1obj_get_sn(VALUE self)
 {
@@ -1384,6 +1403,14 @@ ossl_asn1obj_get_sn(VALUE self)
     return ret;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId#ln
+ *
+ * The long name of the ObjectId, as defined in +openssl/objects.h+.
+ */
+/* Document-method: OpenSSL::ASN1::ObjectId.long_name
+ *
+ * #long_name is an alias to #ln
+ */
 static VALUE
 ossl_asn1obj_get_ln(VALUE self)
 {
@@ -1397,6 +1424,10 @@ ossl_asn1obj_get_ln(VALUE self)
     return ret;
 }
 
+/* Document-method: OpenSSL::ASN1::ObjectId#oid
+ *
+ * The object identifier as a String.
+ */
 static VALUE
 ossl_asn1obj_get_oid(VALUE self)
 {
@@ -1778,6 +1809,10 @@ Init_ossl_asn1()
      *
      * == OpenSSL::ASN1::ObjectId
      *
+     * While OpenSSL::ASN1::ObjectId.new will allocate a new ObjectId, it is
+     * not typically allocated this way, but rather that are received from
+     * parsed ASN1 encodings.
+     *
      * === Additional attributes
      * * +sn+: the short name as defined in <openssl/objects.h>.
      * * +ln+: the long name as defined in <openssl/objects.h>.
@@ -1916,6 +1951,14 @@ do{\
 
     OSSL_ASN1_DEFINE_CLASS(EndOfContent, Data);
 
+
+    /* Document-class: OpenSSL::ASN1::ObjectId
+     *
+     * Represents the primitive object id for OpenSSL::ASN1
+     */
+#if 0
+    cASN1ObjectId = rb_define_class_under(mASN1, "ObjectId", cASN1Primitive);  /* let rdoc know */
+#endif
     rb_define_singleton_method(cASN1ObjectId, "register", ossl_asn1obj_s_register, 3);
     rb_define_method(cASN1ObjectId, "sn", ossl_asn1obj_get_sn, 0);
     rb_define_method(cASN1ObjectId, "ln", ossl_asn1obj_get_ln, 0);

@@ -66,6 +66,7 @@ ossl_x509_new_from_file(VALUE filename)
     if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
 	ossl_raise(eX509CertError, "%s", strerror(errno));
     }
+    rb_fd_fix_cloexec(fileno(fp));
     x509 = PEM_read_X509(fp, NULL, NULL, NULL);
     /*
      * prepare for DER...
@@ -829,9 +830,6 @@ Init_ossl_x509cert()
      *   cert.sign(root_key, OpenSSL::Digest::SHA256.new)
      *
      */
-
-    eX509CertError = rb_define_class_under(mX509, "CertificateError", eOSSLError);
-
     cX509Cert = rb_define_class_under(mX509, "Certificate", rb_cObject);
 
     rb_define_alloc_func(cX509Cert, ossl_x509_alloc);

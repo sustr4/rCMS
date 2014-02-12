@@ -1,0 +1,6 @@
+$(OBJS): $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/io.h \
+  $(hdrdir)/ruby/encoding.h \
+  $(hdrdir)/ruby/oniguruma.h \
+  $(hdrdir)/ruby/thread.h
+ossl.o: threads/thread_native.h threads/thread_$(THREAD_MODEL).h
