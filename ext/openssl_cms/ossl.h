@@ -30,6 +30,7 @@ extern "C" {
 #endif
 #include <ruby.h>
 #include <ruby/io.h>
+#include <ruby/thread.h>
 
 /*
  * Check the OpenSSL version
@@ -75,6 +76,11 @@ extern "C" {
 #  include <openssl/ocsp.h>
 #endif
 
+/* OpenSSL requires passwords for PEM-encoded files to be at least four
+ * characters long
+ */
+#define OSSL_MIN_PWD_LEN 4
+
 /*
  * Common Module
  */
@@ -90,15 +96,15 @@ extern VALUE eOSSLError;
  */
 #define OSSL_Check_Kind(obj, klass) do {\
   if (!rb_obj_is_kind_of((obj), (klass))) {\
-    ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected kind of %s)",\
-               rb_obj_classname(obj), rb_class2name(klass));\
+    ossl_raise(rb_eTypeError, "wrong argument (%"PRIsVALUE")! (Expected kind of %"PRIsVALUE")",\
+               rb_obj_class(obj), (klass));\
   }\
 } while (0)
 
 #define OSSL_Check_Instance(obj, klass) do {\
   if (!rb_obj_is_instance_of((obj), (klass))) {\
-    ossl_raise(rb_eTypeError, "wrong argument (%s)! (Expected instance of %s)",\
-               rb_obj_classname(obj), rb_class2name(klass));\
+    ossl_raise(rb_eTypeError, "wrong argument (%"PRIsVALUE")! (Expected instance of %"PRIsVALUE")",\
+               rb_obj_class(obj), (klass));\
   }\
 } while (0)
 
