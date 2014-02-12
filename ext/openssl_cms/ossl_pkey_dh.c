@@ -81,19 +81,66 @@ ossl_dh_new(EVP_PKEY *pkey)
 /*
  * Private
  */
+#if defined(HAVE_DH_GENERATE_PARAMETERS_EX) && HAVE_BN_GENCB
+struct dh_blocking_gen_arg {
+    DH *dh;
+    int size;
+    int gen;
+    BN_GENCB *cb;
+    int result;
+};
+
+static void *
+dh_blocking_gen(void *arg)
+{
+    struct dh_blocking_gen_arg *gen = (struct dh_blocking_gen_arg *)arg;
+    gen->result = DH_generate_parameters_ex(gen->dh, gen->size, gen->gen, gen->cb);
+    return 0;
+}
+#endif
+
 static DH *
 dh_generate(int size, int gen)
 {
-    DH *dh;
+#if defined(HAVE_DH_GENERATE_PARAMETERS_EX) && HAVE_BN_GENCB
+    BN_GENCB cb;
+    struct ossl_generate_cb_arg cb_arg;
+    struct dh_blocking_gen_arg gen_arg;
+    DH *dh = DH_new();
 
-    dh = DH_generate_parameters(size, gen,
-	    rb_block_given_p() ? ossl_generate_cb : NULL,
-	    NULL);
     if (!dh) return 0;
 
-    if (!DH_generate_key(dh)) {
+    memset(&cb_arg, 0, sizeof(struct ossl_generate_cb_arg));
+    if (rb_block_given_p())
+	cb_arg.yield = 1;
+    BN_GENCB_set(&cb, ossl_generate_cb_2, &cb_arg);
+    gen_arg.dh = dh;
+    gen_arg.size = size;
+    gen_arg.gen = gen;
+    gen_arg.cb = &cb;
+    if (cb_arg.yield == 1) {
+	/* we cannot release GVL when callback proc is supplied */
+	dh_blocking_gen(&gen_arg);
+    } else {
+	/* there's a chance to unblock */
+	rb_thread_call_without_gvl(dh_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
+    }
+
+    if (!gen_arg.result) {
 	DH_free(dh);
+	if (cb_arg.state) rb_jump_tag(cb_arg.state);
 	return 0;
+    }
+#else
+    DH *dh;
+
+    dh = DH_generate_parameters(size, gen, rb_block_given_p() ? ossl_generate_cb : NULL, NULL);
+    if (!dh) return 0;
+#endif
+
+    if (!DH_generate_key(dh)) {
+        DH_free(dh);
+        return 0;
     }
 
     return dh;
@@ -231,7 +278,9 @@ ossl_dh_is_private(VALUE self)
 
 /*
  *  call-seq:
+ *     dh.export -> aString
  *     dh.to_pem -> aString
+ *     dh.to_s -> aString
  *
  * Encodes this DH to its PEM encoding. Note that any existing per-session
  * public/private keys will *not* get encoded, just the Diffie-Hellman
@@ -381,7 +430,7 @@ ossl_dh_to_public_key(VALUE self)
 
 /*
  *  call-seq:
- *     dh.check_params -> true | false
+ *     dh.params_ok? -> true | false
  *
  * Validates the Diffie-Hellman parameters associated with this instance.
  * It checks whether a safe prime and a suitable generator are used. If this
