@@ -4,7 +4,7 @@ Gem::Specification.new do |gem|
   gem.summary = "OpenSSL with CMS functions for Ruby 2.1"
   gem.authors = ["Zdenek Sustr", "Boris Parak"]
   gem.homepage = 'https://github.com/arax/openssl-cms'
-  gem.license = 'See LICENSE at https://github.com/arax/openssl-cms/blob/master/LICENSE'
+  gem.license = 'https://github.com/arax/openssl-cms/blob/master/LICENSE'
   gem.description = "OpenSSL with CMS functions for Ruby 2.1"
   gem.email = ['parak@cesnet.cz']
   
