@@ -23,8 +23,49 @@ module OpenSSL
       DEFAULT_PARAMS = {
         :ssl_version => "SSLv23",
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
-        :ciphers => "ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW",
-        :options => OpenSSL::SSL::OP_ALL,
+        :ciphers => %w{
+          ECDHE-ECDSA-AES128-GCM-SHA256
+          ECDHE-RSA-AES128-GCM-SHA256
+          ECDHE-ECDSA-AES256-GCM-SHA384
+          ECDHE-RSA-AES256-GCM-SHA384
+          DHE-RSA-AES128-GCM-SHA256
+          DHE-DSS-AES128-GCM-SHA256
+          DHE-RSA-AES256-GCM-SHA384
+          DHE-DSS-AES256-GCM-SHA384
+          ECDHE-ECDSA-AES128-SHA256
+          ECDHE-RSA-AES128-SHA256
+          ECDHE-ECDSA-AES128-SHA
+          ECDHE-RSA-AES128-SHA
+          ECDHE-ECDSA-AES256-SHA384
+          ECDHE-RSA-AES256-SHA384
+          ECDHE-ECDSA-AES256-SHA
+          ECDHE-RSA-AES256-SHA
+          DHE-RSA-AES128-SHA256
+          DHE-RSA-AES256-SHA256
+          DHE-RSA-AES128-SHA
+          DHE-RSA-AES256-SHA
+          DHE-DSS-AES128-SHA256
+          DHE-DSS-AES256-SHA256
+          DHE-DSS-AES128-SHA
+          DHE-DSS-AES256-SHA
+          AES128-GCM-SHA256
+          AES256-GCM-SHA384
+          AES128-SHA256
+          AES256-SHA256
+          AES128-SHA
+          AES256-SHA
+          ECDHE-ECDSA-RC4-SHA
+          ECDHE-RSA-RC4-SHA
+          RC4-SHA
+        }.join(":"),
+        :options => -> {
+          opts = OpenSSL::SSL::OP_ALL
+          opts &= ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS if defined?(OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS)
+          opts |= OpenSSL::SSL::OP_NO_COMPRESSION if defined?(OpenSSL::SSL::OP_NO_COMPRESSION)
+          opts |= OpenSSL::SSL::OP_NO_SSLv2 if defined?(OpenSSL::SSL::OP_NO_SSLv2)
+          opts |= OpenSSL::SSL::OP_NO_SSLv3 if defined?(OpenSSL::SSL::OP_NO_SSLv3)
+          opts
+        }.call
       }
 
       DEFAULT_CERT_STORE = OpenSSL::X509::Store.new
@@ -32,6 +73,14 @@ module OpenSSL
       if defined?(OpenSSL::X509::V_FLAG_CRL_CHECK_ALL)
         DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
       end
+
+      ##
+      # Sets the parameters for this SSL context to the values in +params+.
+      # The keys in +params+ must be assignment methods on SSLContext.
+      #
+      # If the verify_mode is not VERIFY_NONE and ca_file, ca_path and
+      # cert_store are not set then the system default certificate store is
+      # used.
 
       def set_params(params={})
         params = DEFAULT_PARAMS.merge(params)
@@ -126,7 +175,7 @@ module OpenSSL
 
       def post_connection_check(hostname)
         unless OpenSSL::SSL.verify_certificate_identity(peer_cert, hostname)
-          raise SSLError, "hostname does not match the server certificate"
+          raise SSLError, "hostname \"#{hostname}\" does not match the server certificate"
         end
         return true
       end
@@ -138,34 +187,49 @@ module OpenSSL
       end
     end
 
+    ##
+    # SSLServer represents a TCP/IP server socket with Secure Sockets Layer.
     class SSLServer
       include SocketForwarder
+      # When true then #accept works exactly the same as TCPServer#accept
       attr_accessor :start_immediately
 
+      # Creates a new instance of SSLServer.
+      # * +srv+ is an instance of TCPServer.
+      # * +ctx+ is an instance of OpenSSL::SSL::SSLContext.
       def initialize(svr, ctx)
         @svr = svr
         @ctx = ctx
         unless ctx.session_id_context
-          session_id = OpenSSL::Digest::MD5.hexdigest($0)
+          # see #6137 - session id may not exceed 32 bytes
+          prng = ::Random.new($0.hash)
+          session_id = prng.bytes(16).unpack('H*')[0]
           @ctx.session_id_context = session_id
         end
         @start_immediately = true
       end
 
+      # Returns the TCPServer passed to the SSLServer when initialized.
       def to_io
         @svr
       end
 
+      # See TCPServer#listen for details.
       def listen(backlog=5)
         @svr.listen(backlog)
       end
 
+      # See BasicSocket#shutdown for details.
       def shutdown(how=Socket::SHUT_RDWR)
         @svr.shutdown(how)
       end
 
+      # Works similar to TCPServer#accept.
       def accept
-        sock = @svr.accept
+        # Socket#accept returns [socket, addrinfo].
+        # TCPServer#accept returns a socket.
+        # The following comma strips addrinfo.
+        sock, = @svr.accept
         begin
           ssl = OpenSSL::SSL::SSLSocket.new(sock, @ctx)
           ssl.sync_close = true
@@ -177,6 +241,7 @@ module OpenSSL
         end
       end
 
+      # See IO#close for details.
       def close
         @svr.close
       end
